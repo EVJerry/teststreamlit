@@ -10,7 +10,7 @@ st.set_page_config(page_title="Hệ thống Nhận diện Vật thể AI", layou
 with st.sidebar:
     st.title("⚙️ Cấu hình")
     st.info("Ứng dụng sử dụng mô hình YOLOv8 để nhận diện vật thể thời gian thực.")
-    confidence = st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.4)
+    confidence = st.slider("Confidence", 0.0, 1.0, 0.4)
     st.divider()
     st.success("Trạng thái: Đang hoạt động")
 
