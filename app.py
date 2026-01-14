@@ -3,39 +3,44 @@ from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 
-st.title("YOLOv8 Object Detection on Streamlit")
+# Cấu hình trang rộng và tiêu đề chuyên nghiệp
+st.set_page_config(page_title="Hệ thống Nhận diện Vật thể AI", layout="wide")
 
-# 1. Load mô hình (Sẽ tự động tải file .pt về server ở lần chạy đầu tiên)
-@st.cache_resource
-def load_model():
-    return YOLO("yolov8n.pt") 
+# Thiết kế Thanh bên (Sidebar)
+with st.sidebar:
+    st.title("⚙️ Cấu hình")
+    st.info("Ứng dụng sử dụng mô hình YOLOv8 để nhận diện vật thể thời gian thực.")
+    confidence = st.slider("Độ tự tin tối thiểu (Confidence)", 0.0, 1.0, 0.4)
+    st.divider()
+    st.success("Trạng thái: Đang hoạt động")
 
-model = load_model()
+# Tiêu đề chính
+st.title("🔍 AI Vision Dashboard")
+st.markdown("---")
 
-# 2. Giao diện tải ảnh
-uploaded_file = st.file_uploader("Chọn một bức ảnh...", type=["jpg", "jpeg", "png"])
+# Chia cột cho ảnh gốc và kết quả
+col1, col2 = st.columns(2)
 
-if uploaded_file is not None:
-    # Chuyển file tải lên thành ảnh PIL
+uploaded_file = st.file_uploader("Tải ảnh lên để phân tích...", type=['jpg', 'jpeg', 'png'])
+
+if uploaded_file:
     image = Image.open(uploaded_file)
     
-    # Hiển thị ảnh gốc
-    st.image(image, caption="Ảnh gốc", use_column_width=True)
-    
-    if st.button("Bắt đầu nhận diện"):
-        # 3. Chạy mô hình
-        results = model(image)
-        
-        # 4. Vẽ kết quả lên ảnh
-        res_plotted = results[0].plot() # Trả về mảng numpy (BGR)
-        
-        # Hiển thị ảnh kết quả
-        st.image(res_plotted, caption="Kết quả nhận diện", channels="BGR", use_column_width=True)
-        
-        # Hiển thị danh sách vật thể tìm thấy
-        st.write("Các vật thể phát hiện được:")
-        for box in results[0].boxes:
-            class_id = int(box.cls[0])
-            label = model.names[class_id]
-            conf = float(box.conf[0])
-            st.write(f"- **{label}**: {conf:.2f}")
+    with col1:
+        st.subheader("🖼️ Ảnh đầu vào")
+        st.image(image, use_container_width=True)
+
+    with col2:
+        st.subheader("🤖 Kết quả AI")
+        with st.spinner("Đang phân tích..."):
+            # Load model
+            model = YOLO("yolov8n.pt")
+            results = model(image, conf=confidence)
+            
+            # Vẽ kết quả
+            res_plotted = results[0].plot()
+            st.image(res_plotted, channels="BGR", use_container_width=True)
+            
+            # Hiển thị thống kê
+            count = len(results[0].boxes)
+            st.metric("Số vật thể phát hiện được", count)
