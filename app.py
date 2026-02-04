@@ -1,46 +1,41 @@
 import streamlit as st
-from ultralytics import YOLO
+from deepface import DeepFace
 from PIL import Image
 import numpy as np
+import cv2
 
-# Cấu hình trang rộng và tiêu đề chuyên nghiệp
-st.set_page_config(page_title="Hệ thống Nhận diện Vật thể AI", layout="wide")
+st.title("Phân tích Cảm xúc Gương mặt AI")
 
-# Thiết kế Thanh bên (Sidebar)
-with st.sidebar:
-    st.title("⚙️ Cấu hình")
-    st.info("Ứng dụng sử dụng mô hình YOLOv8 để nhận diện vật thể thời gian thực.")
-    confidence = st.slider("Confidence", 0.0, 1.0, 0.4)
-    st.divider()
-    st.success("Trạng thái: Đang hoạt động")
-
-# Tiêu đề chính
-st.title("🔍 AI Vision Dashboard")
-st.markdown("---")
-
-# Chia cột cho ảnh gốc và kết quả
-col1, col2 = st.columns(2)
-
-uploaded_file = st.file_uploader("Tải ảnh lên để phân tích...", type=['jpg', 'jpeg', 'png'])
+uploaded_file = st.file_uploader("Tải ảnh gương mặt...", type=['jpg', 'png', 'jpeg'])
 
 if uploaded_file:
+    # Chuyển đổi ảnh
     image = Image.open(uploaded_file)
+    img_array = np.array(image)
     
-    with col1:
-        st.subheader("🖼️ Ảnh đầu vào")
-        st.image(image, use_container_width=True)
+    st.image(image, caption="Ảnh gốc", use_container_width=True)
 
-    with col2:
-        st.subheader("🤖 Kết quả AI")
+    if st.button("Phân tích cảm xúc"):
         with st.spinner("Đang phân tích..."):
-            # Load model
-            model = YOLO("yolov8n.pt")
-            results = model(image, conf=confidence)
-            
-            # Vẽ kết quả
-            res_plotted = results[0].plot()
-            st.image(res_plotted, channels="BGR", use_container_width=True)
-            
-            # Hiển thị thống kê
-            count = len(results[0].boxes)
-            st.metric("Số vật thể phát hiện được", count)
+            try:
+                # DeepFace phân tích cảm xúc
+                results = DeepFace.analyze(img_array, actions=['emotion'], enforce_detection=True)
+                
+                # Kết quả thường là một danh sách các khuôn mặt
+                for face in results:
+                    emotion = face['dominant_emotion']
+                    # Chuyển đổi tên cảm xúc sang tiếng Việt cho thân thiện
+                    emotion_dict = {
+                        'angry': 'Giận dữ 😡', 'disgust': 'Ghê tởm 🤢', 
+                        'fear': 'Sợ hãi 😨', 'happy': 'Hạnh phúc 😊', 
+                        'sad': 'Buồn bã 😢', 'surprise': 'Bất ngờ 😲', 
+                        'neutral': 'Bình thường 😐'
+                    }
+                    translated_emotion = emotion_dict.get(emotion, emotion)
+                    
+                    st.subheader(f"Cảm xúc chủ đạo: {translated_emotion}")
+                    
+                    # Hiển thị biểu đồ các chỉ số cảm xúc
+                    st.bar_chart(face['emotion'])
+            except Exception as e:
+                st.error("Không tìm thấy gương mặt trong ảnh. Hãy thử ảnh khác!")
